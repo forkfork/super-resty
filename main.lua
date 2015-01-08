@@ -1,6 +1,15 @@
 local ffi = require('ffi')
+require ('libc')
 
 local boilerplate = [[
+
+local r = function(response, status)
+  local status = status or 200
+  ngx.say(response)
+  ngx.header["Content-Type"] = "application/json"
+  ngx.status = status
+end
+
 local _M = function ()
 
 %s
@@ -17,7 +26,10 @@ local load_code  = function ()
   local req_route_path = "code/" .. route_base64 .. ".lua"
   local req_route_path2 = "code." .. route_base64
   local exists = ffi.C.access(req_route_path, 0)
-  local fp = io.open(req_route_path, "w")
+  local fp, err = io.open(req_route_path, "w")
+  if err then
+    ngx.log(ngx.INFO, err)
+  end
   local req_code = ngx.req.get_body_data()
   fp:write(string.format(boilerplate, req_code))
   fp:close()
